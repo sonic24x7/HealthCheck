@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# FILE 1: /etc/systemd/system/cctv-diag.service
+# ─────────────────────────────────────────────────────────────────────────────
+[Unit]
+Description=CCTV Camera Box Diagnostic
+Documentation=file:///usr/local/share/doc/cctv-diag/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cctv-diag \
+    --output-dir /var/lib/cctv-diag/bundles \
+    --since 336h
+User=root
+# Prevent the diagnostic itself from being OOM-killed
+OOMScoreAdjust=-100
+# Give it up to 10 minutes for a full run
+TimeoutStartSec=600
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cctv-diag
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FILE 2: /etc/systemd/system/cctv-diag.timer
+# ─────────────────────────────────────────────────────────────────────────────
+[Unit]
+Description=Run CCTV diagnostic every two weeks
+After=network-online.target
+
+[Timer]
+# First run 14 days after enabling
+OnActiveSec=14d
+# Subsequent runs every 14 days
+OnUnitActiveSec=14d
+# If the system was off during a scheduled run, catch up within 1 hour
+Persistent=true
+RandomizedDelaySec=1800
+Unit=cctv-diag.service
+
+[Install]
+WantedBy=timers.target

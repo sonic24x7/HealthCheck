@@ -1,0 +1,37 @@
+# /etc/cctv-diag.conf — CCTV Diagnostic Tool Configuration
+# All values here override the script's built-in defaults.
+# This file is sourced by cctv-diag.sh at startup.
+# -------------------------------------------------------------------
+
+# --- Disk thresholds (percent used) ---
+DISK_AMBER=85       # Warn at 85% used
+DISK_RED=95         # Critical at 95% used (CCTV recording risk)
+
+# --- Inode thresholds (percent used) ---
+INODE_AMBER=80
+INODE_RED=90
+
+# --- Timeshift snapshot age thresholds ---
+SNAP_AMBER_DAYS=14  # AMBER if last snapshot older than N days
+SNAP_RED_DAYS=30    # RED if last snapshot older than N days
+
+# --- Witness NX expected listening ports (comma-separated) ---
+NX_PORTS="7001,7002,7004"
+
+# --- Command timeout (seconds, applied to most external commands) ---
+CMD_TIMEOUT=10
+
+# --- Ping settings ---
+PING_COUNT=4
+PING_TIMEOUT=5
+
+# --- Optionally lock in a BOX_ID (useful on ambiguous hosts) ---
+# BOX_ID=42
+
+# --- Optionally set expected hostname/IP/UFW state ---
+# EXPECTED_HOSTNAME="cctv-box42"
+# EXPECTED_IP="192.168.42.10"
+# EXPECTED_UFW_STATE="enabled"
+
+# --- Treat Tailscale offline as RED? ---
+# REQUIRE_TAILSCALE=true
