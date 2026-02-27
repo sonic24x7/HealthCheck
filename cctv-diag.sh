@@ -213,7 +213,7 @@ log_scan() {
     [[ -f "$f" ]] || continue
     # Try to filter by time if journalctl; for plain files grep and hope
     local matches
-    matches=$(grep -iE "${grep_args[@]/#/-e}" "$f" 2>/dev/null | tail -200) || true
+    matches=$(grep -iE "${grep_args[@]}" "$f" 2>/dev/null | tail -200) || true
     [[ -n "$matches" ]] && out+=$'\n'"=== $f ===\n$matches"
   done
   if [[ -n "$out" ]]; then
@@ -928,8 +928,7 @@ check_witness_nx() {
     [[ -d "$log_dir" ]] || continue
     nx_logs_found=true
     local log_files
-    readarray -t log_files < <(find "$log_dir" -maxdepth 2 -name "*.log" -newer /proc/1 -o \
-      -name "*.log" -maxdepth 2 2>/dev/null | head -20 || true)
+    readarray -t log_files < <(find "$log_dir" -maxdepth 2 -name "*.log" 2>/dev/null | head -20 || true)
     for lf in "${log_files[@]:-}"; do
       [[ -f "$lf" ]] || continue
       local hits
@@ -1184,15 +1183,16 @@ check_tailscale() {
 
   # Tailscale status
   run_silent "tailscale-status" $CMD_TIMEOUT tailscale status
-  echo "$RUN_OUT" | head -40
-  echo "$RUN_OUT" > "$CMDS_DIR/tailscale_status.txt"
+  local ts_status_out="$RUN_OUT"
+  echo "$ts_status_out" | head -40
+  echo "$ts_status_out" > "$CMDS_DIR/tailscale_status.txt"
 
   local ts_auth
-  ts_auth=$(echo "$RUN_OUT" | grep -c 'Logged in' || echo 0)
+  ts_auth=$(echo "$ts_status_out" | grep -c 'Logged in' || echo 0)
   local ts_backend
-  ts_backend=$(echo "$RUN_OUT" | head -1)
+  ts_backend=$(echo "$ts_status_out" | head -1)
 
-  if echo "$RUN_OUT" | grep -qiE 'logged out|needs login|unauthorized|not logged in'; then
+  if echo "$ts_status_out" | grep -qiE 'logged out|needs login|unauthorized|not logged in'; then
     if $REQUIRE_TAILSCALE; then
       status_line "Tailscale-auth" "RED" "Not authenticated to Tailscale"
       add_json "tailscale" "TailscaleAuth" "RED" "not_authenticated"
@@ -1215,7 +1215,7 @@ check_tailscale() {
 
   # Peer count
   local peer_count
-  peer_count=$(echo "$RUN_OUT" | grep -c 'active\|idle' 2>/dev/null || echo "?")
+  peer_count=$(echo "$ts_status_out" | grep -c 'active\|idle' 2>/dev/null || echo "?")
   status_line "Tailscale-peers" "INFO" "Peers visible: $peer_count"
 
   # Netcheck (if available in full mode)
@@ -1253,7 +1253,7 @@ check_logs() {
       *) since_journal="24 hour ago" ;;
     esac
     local j_out
-    j_out=$(timeout 15 journalctl --since "$since_journal ago" -p err -q --no-pager \
+    j_out=$(timeout 15 journalctl --since "$since_journal" -p err -q --no-pager \
       --output=short-iso 2>/dev/null | head -100 || true)
     [[ -n "$j_out" ]] && echo "$j_out" | head -50 && echo "$j_out" > "$LOGS_DIR/journal_errors.txt"
     local err_cnt; err_cnt=$(echo -n "$j_out" | wc -l)
